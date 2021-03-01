@@ -1,0 +1,4 @@
+# Copy a short sound file into your image and uncomment
+# (one of) these lines to indicate startup and/or shutdown
+#STARTUP_SOUND="/root/startup.wav"
+#SHUTDOWN_SOUND="/root/shutdown.wav"

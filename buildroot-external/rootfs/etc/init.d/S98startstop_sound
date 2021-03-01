@@ -1,0 +1,36 @@
+#! /bin/sh
+
+NAME=startstop_sound
+
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME || exit 0
+
+start() {
+  if [ -z "$STARTUP_SOUND" ] ; then
+    exit 0
+  else
+    aplay --quiet $STARTUP_SOUND
+    echo "Startup finished"
+  fi
+}
+
+stop() {
+  if [ -z "$SHUTDOWN_SOUND" ] ; then
+    exit 0
+  else
+    aplay --quiet $SHUTDOWN_SOUND
+  fi
+}
+
+case "$1" in
+  start)
+	start
+	;;
+  stop)
+	stop
+	;;
+  *)
+	echo "Usage: $0 {start|stop}"
+	exit 1
+esac
+
+exit $?
