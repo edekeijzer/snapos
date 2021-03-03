@@ -10,11 +10,13 @@ SNAPCAST_DEPENDENCIES = libogg alsa-lib avahi # libstdcpp libatomic libflac libv
 SNAPCAST_LICENSE = GPL-3.0+
 SNAPCAST_LICENSE_FILES = LICENSE
 
+SNAPWEB_VERSION = v0.2.0
+SNAPWEB_SITE = $(call github,badaix,snapweb,$(SNAPWEB_VERSION))
+
 define SNAPCLIENT_INSTALL_CONFIG
 	mkdir -p $(TARGET_DIR)/etc/default
 	$(INSTALL) -m 0755 -D $(@D)/debian/snapclient.default $(TARGET_DIR)/etc/default/snapclient
 endef
-
 
 define SNAPSERVER_INSTALL_CONFIG
 	mkdir -p $(TARGET_DIR)/etc/default
@@ -47,6 +49,10 @@ endif
 ifeq ($(BR2_PACKAGE_SNAPCAST_SERVER),y)
 SNAPCAST_POST_INSTALL_TARGET_HOOKS += SNAPSERVER_INSTALL_CONFIG
 
+ifeq ($(BR2_PACKAGE_SNAPCAST_SNAPWEB),y)
+	
+endif
+
 define SNAPSERVER_INSTALL_INIT_SYSV
 	$(INSTALL) -m 0755 -D $(SNAPCAST_PKGDIR)/S99snapserver $(TARGET_DIR)/etc/init.d/S99snapserver
 endef
@@ -74,6 +80,5 @@ define SNAPCAST_INSTALL_INIT_SYSV
 	$(SNAPCLIENT_INSTALL_INIT_SYSV)
 	$(SNAPSERVER_INSTALL_INIT_SYSV)
 endef
-
 
 $(eval $(cmake-package))

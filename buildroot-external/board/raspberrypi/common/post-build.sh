@@ -28,7 +28,7 @@ iface wlan0 inet static
 __EOF__
 
         echo "Adding SSID and PSK to /etc/wpa_supplicant.conf."
-        cat << __EOF__ >> "${TARGET_DIR}/etc/wpa_supplicant.conf"
+        cat << __EOF__ > "${TARGET_DIR}/etc/wpa_supplicant.conf"
 ctrl_interface=/run/wpa_supplicant
 fast_reauth=1
 update_config=1
@@ -54,15 +54,15 @@ iface wlan0 inet dhcp
     wait-delay 15
 __EOF__
         echo "Adding SSID and PSK to /etc/wpa_supplicant.conf."
-        cat << __EOF__ >> "${TARGET_DIR}/etc/wpa_supplicant.conf"
+        cat << __EOF__ > "${TARGET_DIR}/etc/wpa_supplicant.conf"
 ctrl_interface=/run/wpa_supplicant
 fast_reauth=1
 update_config=1
 ap_scan=1
 
 network={
-    ssid="${BR2_SNAPOS_WIFI_SSID}"
-    psk="${BR2_SNAPOS_WIFI_KEY}"
+    ssid="${SNAPOS_WIFI_SSID}"
+    psk="${SNAPOS_WIFI_KEY}"
 }
 __EOF__
       fi

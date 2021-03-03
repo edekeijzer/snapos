@@ -1,0 +1,6 @@
+config BR2_PACKAGE_SNAPCONTROL
+	bool "Snapcontrol"
+	depends on BR2_PACKAGE_SNAPCAST
+	select BR2_PACKAGE_PYTHON3
+	help
+	  Python3 controller for Snapcast

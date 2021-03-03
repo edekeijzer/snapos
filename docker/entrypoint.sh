@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 
 BUILDROOT_REPO=${BUILDROOT_REPO:-'git://git.buildroot.net/buildroot'}
-BUILDROOT_VERSION=${BUILDROOT_VERSION:-'2020.11.x'}
+BUILDROOT_VERSION=${BUILDROOT_VERSION:-'master'}
 
 SNAPOS_REPO=${SNAPCAST_REPO:-'git://github.com/edekeijzer/snapos'}
 SNAPOS_VERSION=${SNAPCAST_VERSION:-'master'}
+
+export BR2_CCACHE_DIR="/ccache"
+export BR2_DL_DIR="/download"
+
 sync_git () {
     pushd $2 >/dev/null
     git pull 2>/dev/null || git clone "$1" "$2"
@@ -16,10 +20,10 @@ sync_git () {
 }
 
 copy_file () {
-  MYFILE="${1:-sdcard.img}"
-  IMAGEDIR="${1:-/image}"
-  if [ -e "$/buildroot/output/image/${MYFILE}" ] ; then
-    cp "/buildroot/output/image/${MYFILE}" "${IMAGEDIR%/*}/${MYFILE%.*}-$(date +%y%m%d_%H%M)${MYFILE##*.}"
+  OUTPUT_DIR="${1:-/image}"
+  MYFILE="${2:-sdcard.img}"
+  if [ -e "$/buildroot/output/images/${MYFILE}" ] ; then
+    cp "/buildroot/output/images/${MYFILE}" "${OUTPUT_DIR%/*}/${MYFILE%.*}-$(date +%y%m%d_%H%M)${MYFILE##*.}"
   else
     [ "$MYFILE" == "zImage" ] && MYCOMMAND="make linux" || MYCOMMAND="make"
     echo "File ${MYFILE} not found, please run \"${MYCOMMAND}\" first!"
@@ -54,8 +58,8 @@ make_defconfig () {
 }
 
 check_dir () {
-  if [ -e "/{1}/.empty" ] ; then
-    echo "File .empty found in directory ${1}, cannot continue"
+  if [ -e "/{1}/.snapos-empty" ] ; then
+    echo "File .snapos-empty found in directory ${1}, cannot continue"
     exit 1
   else
     echo "Output directory ${1} appears to be mounted"
@@ -63,7 +67,25 @@ check_dir () {
 }
 
 show_help () {
-  echo "This should be implemented"
+  cat << __EOF__
+Usage: docker run --rm -it -e BUILDROOT_VERSION="2020.11.x" -v $PWD:/image -v $PWD/download:/download -v $PWD/ccache:/ccache -v $PWD/snapos:/snapos -v $PWD/buildroot:/buildroot snapos-builder:0.2
+Possible commands:
+
+help - show this help
+
+check - check if /buildroot and /snapos contain some data (TODO: check if repo with right version is present) and if /image has a volume from the host mounted to it
+
+git [buildroot|snapos] - without the second option, clone/pull both repos, otherwise just do the one specified
+
+defconfig <board name> - apply a defconfig to the buildroot repo. Possible values: raspberrypi0w, raspberrypi1, raspberrypi2, raspberrypi3, raspberrypi4
+
+copy [filename] - copy a file from the created images to the /image directory. If no name is specified, copy sdcard.img (which can be flashed onto an SD card)
+
+all <board name> - all of the above. Check image dir, fetch sources from git, apply defconfig for <board name>, then allow you to do some specific settings for your environment. After that, fetch sources, build a toolchain, a kernel and the rest of the system and then copy the file to the directory mounted to /image.
+
+
+Any other command will be executed as-is, so if you'd just want to enter a shell inside the container to try some things, enter 'bash' as a command. The working dir is /buildroot, so you can execute any buildroot command directly as well.
+__EOF__
 }
 
 case $1 in
@@ -90,18 +112,21 @@ case $1 in
   ;;
   copy)
     check_dir "/image" || exit 1
-    copy_sdcard "/image"
+    copy_file "/image" "${2}"
   ;;
   all)
     echo "Checking prerequisite"
     check_dir "/image" || exit 1
-    echo "Fetching sources, please return in a few minutes to do some configuration - press any key to continue or wait 15 seconds"
-    timeout 15s bash -c read
+    echo "Fetching sources, please return in a few minutes to do some configuration"
     $0 git || exit 1
     $0 defconfig $2 || exit 1
     $0 make menuconfig
-    echo "Pour yourself a drink, this will take a while - press any key to continue or wait 15 seconds"
-    timeout 15s bash -c read
+    echo "Pour yourself a drink, this will take a while"
+    $0 make source
+    $0 make toolchain
+    $0 make uclibc
+    $0 make linux
+    $0 make busybox
     $0 make
     $0 copy
   ;;
@@ -116,6 +141,7 @@ case $1 in
     fi
     pushd /buildroot >/dev/null
     echo "Command: $*"
+    # This is needed to use buildroot as root.
     eval "FORCE_UNSAFE_CONFIGURE=1 $*"
     popd >/dev/null
   ;;
