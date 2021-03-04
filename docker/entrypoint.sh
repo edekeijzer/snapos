@@ -151,8 +151,8 @@ case $1 in
     $0 make menuconfig
     echo "Pour yourself a drink, this will take a while"
     $0 make source
-    $0 make toolchain
     $0 make uclibc
+    $0 make toolchain
     $0 make linux
     $0 make busybox
     $0 make
