@@ -22,14 +22,14 @@ check_file_size() {
   [ -f "${URANDOM_SEED}" ] || return 1
   # Try to read two blocks but exactly one will be read if the file has
   # the correct size.
-  size=$(head -z -c $(expr ${pool_size} \* 2) "${URANDOM_SEED}" 2>/dev/null | wc -c)
+  size=$(head -c $(expr ${pool_size} \* 2) "${URANDOM_SEED}" 2>/dev/null | wc -c)
   test "${size}" -eq "${pool_size}"
 }
 
 init_rng() {
   if check_file_size; then
     printf 'Initializing random number generator: '
-    head -z -c ${pool_size} "${URANDOM_SEED}" > /dev/urandom 2>/dev/null
+    head -c ${pool_size} "${URANDOM_SEED}" > /dev/urandom 2>/dev/null
     status=$?
     if [ ${status} -eq 0 ]; then
       echo "OK"
@@ -45,7 +45,7 @@ save_random_seed() {
   if touch "${URANDOM_SEED}" 2>/dev/null ; then
     old_umask=$(umask)
     umask 077
-    head -z -c ${pool_size} /dev/urandom > "${URANDOM_SEED}" 2>/dev/null
+    head -c ${pool_size} /dev/urandom > "${URANDOM_SEED}" 2>/dev/null
     status=$?
     umask ${old_umask}
     if [ ${status} -eq 0 ]; then

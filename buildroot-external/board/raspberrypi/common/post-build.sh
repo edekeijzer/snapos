@@ -12,40 +12,8 @@ do
       SNAPOS_WIFI_SSID=$(sed -n 's/^BR2_SNAPOS_WIFI_SSID=\"\(.*\)\"$/\1/p' ${BR2_CONFIG})
       SNAPOS_WIFI_KEY=$(sed -n 's/^BR2_SNAPOS_WIFI_KEY=\"\(.*\)\"$/\1/p' ${BR2_CONFIG})
 
-      if grep -q "^BR2_SNAPOS_WIFI_AP=y" ${BR2_CONFIG} ; then
-        SNAPOS_WIFI_IP=$(sed -n 's/^BR2_SNAPOS_WIFI_IP=\"\(.*\)\"$/\1/p' ${BR2_CONFIG})
-        SNAPOS_WIFI_NETMASK=$(sed -n 's/^BR2_SNAPOS_WIFI_NETMASK=\"\(.*\)\"$/\1/p' ${BR2_CONFIG})
-        echo "Adding wlan0 to /etc/network/interfaces."
-        cat << __EOF__ >> "${TARGET_DIR}/etc/network/interfaces"
-
-auto wlan0
-iface wlan0 inet static
-    address ${SNAPOS_WIFI_IP}
-    netmask ${SNAPOS_WIFI_NETMASK}
-    pre-up wpa_supplicant -B -D nl80211 -i wlan0 -c /etc/wpa_supplicant.conf
-    post-down killall -q wpa_supplicant
-    wait-delay 15
-__EOF__
-
-        echo "Adding SSID and PSK to /etc/wpa_supplicant.conf."
-        cat << __EOF__ > "${TARGET_DIR}/etc/wpa_supplicant.conf"
-ctrl_interface=/run/wpa_supplicant
-fast_reauth=1
-update_config=1
-ap_scan=2
-
-network={
-    ssid="${SNAPOS_WIFI_SSID}"
-    psk="${SNAPOS_WIFI_KEY}"
-    mode=2
-    key_mgmt=WPA-PSK
-    proto=RSN
-    pairwise=CCMP
-}
-__EOF__
-      else
-        echo "Adding wlan0 to /etc/network/interfaces."
-        cat << __EOF__ >> "${TARGET_DIR}/etc/network/interfaces"
+      echo "Adding wlan0 to /etc/network/interfaces."
+      cat << __EOF__ >> "${TARGET_DIR}/etc/network/interfaces"
 
 auto wlan0
 iface wlan0 inet dhcp
@@ -65,7 +33,6 @@ network={
     psk="${SNAPOS_WIFI_KEY}"
 }
 __EOF__
-      fi
     fi
     ;;
     --mount-boot)

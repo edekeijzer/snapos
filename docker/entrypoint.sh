@@ -22,7 +22,9 @@ sync_git () {
 copy_file () {
   OUTPUT_DIR="${1:-/image}"
   MYFILE="${2:-sdcard.img}"
-  if [ -e "$/buildroot/output/images/${MYFILE}" ] ; then
+  if [ -e "/buildroot/output/images/${MYFILE}" ] ; then
+    echo "Copying ${MYFILE} from container to ${MYFILE}-$(date +%y%m%d_%H%M)"
+    cp "/buildroot/output/images/${MYFILE}" "${OUTPUT_DIR%}/${MYFILE}-$(date +%y%m%d_%H%M)"
     cp "/buildroot/output/images/${MYFILE}" "${OUTPUT_DIR%/*}/${MYFILE%.*}-$(date +%y%m%d_%H%M)${MYFILE##*.}"
   else
     [ "$MYFILE" == "zImage" ] && MYCOMMAND="make linux" || MYCOMMAND="make"
@@ -60,7 +62,7 @@ make_defconfig () {
 check_dir () {
   if [ -e "/{1}/.snapos-empty" ] ; then
     echo "File .snapos-empty found in directory ${1}, cannot continue"
-    exit 1
+    false
   else
     echo "Output directory ${1} appears to be mounted"
   fi
@@ -90,15 +92,41 @@ __EOF__
 
 case $1 in
   check)
-    [ $(ls -1 /buildroot | wc -l) -eq 0 ] && echo "Directory /buildroot is empty" || echo "Files found in directory /buildroot"
-    [ $(ls -1 /snapos | wc -l) -eq 0 ] && echo "Directory /snapos is empty" || echo "Files found in directory /snapos"
-    check_dir "/image"
+    FAULT=0
+    if [ $(ls -1 /buildroot | wc -l) -eq 0 ] ; then 
+      echo "Directory /buildroot is empty" >&2
+      FAULT=1
+    else
+      pushd /buildroot >/dev/null
+      if [ "$(git remote get-url --all origin)" == "${BUILDROOT_REPO}" ] ; then
+        echo "Buildroot repo found in directory /buildroot"
+      else
+        echo "Found files in /buildroot, but not the correct repo" >&2
+        FAULT=1
+      fi
+      popd >/dev/null
+    fi
+    if [ $(ls -1 /snapos | wc -l) -eq 0 ] ; then
+      echo "Directory /snapos is empty" >&2
+      FAULT=1
+    else
+      pushd /snapos >/dev/null
+      if [ "$(git remote get-url --all origin)" == "${SNAPOS_REPO}" ] ; then
+        echo "SnapOS repo found in directory /snapos"
+      else
+        echo "Found files in /snapos, but not the correct repo, $(git remote get-url --all origin) does not equal ${SNAPOS_REPO}" >&2
+        FAULT=1
+      fi
+      popd >/dev/null
+    fi
+    check_dir "/image" || FAULT=1
+    [ $FAULT -gt 0 ] && exit 1
   ;;
   git)
-    if [ "$2" != "snapos" ] ; then
+    if [ -z "$2" ] || [ "$2" == "buildroot" ] ; then
       sync_git $BUILDROOT_REPO "/buildroot" $BUILDROOT_VERSION
     fi
-    if [ "$2" != "buildroot" ] ; then
+    if [ -z "$2" ] || [ "$2" != "snapos" ] ; then
       sync_git $SNAPOS_REPO "/snapos" $SNAPOS_VERSION
     fi
   ;;

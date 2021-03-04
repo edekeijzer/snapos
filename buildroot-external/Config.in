@@ -32,29 +32,8 @@ config BR2_SNAPOS_WIFI_KEY
 	help
 	  The pre-shared key to use to connect to wireless network
 
-config BR2_SNAPOS_WIFI_AP
-	bool "SnapOS WLAN AP mode"
-	help
-	  Configure SnapOS as a wireless AP instead of client.
-          Use the SSID and key configured above
-
-if BR2_SNAPOS_WIFI_AP
-
-config BR2_SNAPOS_WIFI_IP
-	string "SnapOS WLAN-AP IP address"
-        default "10.10.10.10"
-	help
-	  The IP address to use in AP mode
-
-config BR2_SNAPOS_WIFI_NETMASK
-	string "SnapOS WLAN-AP IP netmask"
-        default "255.255.255.0"
-	help
-	  The netmask to use in AP mode
-
-endif
-
 endif
 
 source "$BR2_EXTERNAL_SNAPOS_PATH/package/snapcast/Config.in"
 source "$BR2_EXTERNAL_SNAPOS_PATH/package/snap-mpd/Config.in"
+source "$BR2_EXTERNAL_SNAPOS_PATH/package/snapcontrol/Config.in"
